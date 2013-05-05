@@ -5,7 +5,7 @@ set -e
 # Cheflex is licenced under the General Public License
 # version 3, GPLv3. Read the included LICENSE file.
 
-. /etc/cheflex.rc
+. /etc/cheflex
 Cook=false
 Feed=false
 Free=false
