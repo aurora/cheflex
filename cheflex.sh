@@ -31,7 +31,7 @@ PrepareSrc() {
 		if [ ! -f $TmpDir/$srcfile ]; then
 			cd $TmpDir
 			echo "      downloading $srcfile"
-			axel -a $u
+			aria2c $u -o $srcfile
 		fi
 
 		echo "      extracting $srcfile"
@@ -89,18 +89,20 @@ CompressPkg() {
 		lst=$(find -L . -type f | sed 's/.\//\//' | sort| cat)
 		for i in "$lst"; do echo "$i" >> $FileLst; done
 
-		echo "      checking conflict"
-		for pkg in $(ls $LstPth); do
-			_pkg=$(basename -s .lst $pkg)
-			if [ $_pkg = $n ]; then break; fi
-			for lst_x in $(cat $LstPth/$pkg); do
-				for lst_y in $(cat $FileLst); do
-					if [ $lst_x = $lst_y ]; then
-						echo "      $n: conflicts $_pkg: $lst_y"
-					fi
+		if [ -d $LstPth ]; then
+			echo "      checking conflict"
+			for lst in $(ls $LstPth); do
+				_lst=$(basename -s .lst $lst)
+				if [ $_lst = $n ]; then echo break; fi
+				for lst_x in $(cat $LstPth/$lst); do
+					for lst_y in $(cat $FileLst); do
+						if [ $lst_x = $lst_y ]; then
+							echo "      $n: conflicts $_lst: $lst_y"
+						fi
+					done
 				done
 			done
-		done
+		fi
 
 		echo "      compressing file"
 		if [ ! -d $sys/pkg ]; then mkdir -p $sys/pkg; fi
