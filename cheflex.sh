@@ -13,7 +13,7 @@ List=false
 Ownr=false
 SkipCmp=false
 KeepDbg=false
-SkipPkg=false
+KeepPkg=false
 PwdDir=`pwd`
 Root=$RootDir
 args=""
@@ -57,7 +57,7 @@ CompilePkg() {
 }
 
 CompressPkg() {
-	if [ $SkipPkg = false ]; then
+	if [ $KeepPkg = false ]; then
 		echo "info: creating package: $n-$v"
 		rm -f $pkg/$shr/info/dir
 		cd $pkg
@@ -80,7 +80,7 @@ CompressPkg() {
 		done
 	fi
 
-	if [ $SkipPkg = false ]; then
+	if [ $KeepPkg = false ]; then
 		echo "      creating filelist"
 		LstDir=$pkg/$LstPth
 		FileLst="$LstDir/$n.lst"
@@ -146,7 +146,7 @@ CompressGrp() {
 }
 
 CookPackage() {
-	if [ $SkipPkg = true ]; then pth=$_pth/$pkg/recipe; fi
+	if [ $KeepPkg = true ]; then pth=$_pth/$pkg/recipe; fi
 	. $pth; export n v u p
 
 	grp=$GrpDir
@@ -156,7 +156,7 @@ CookPackage() {
 	tmp=$TmpDir
 
 	pth=$(dirname $pth); cd $pth; rcs=`pwd`
-	if [ $SkipPkg = true ]; then pkg=$grp; fi
+	if [ $KeepPkg = true ]; then pkg=$grp; fi
 
 	export bin etc lib run shr usr var pkg src rcs
 	export CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS
@@ -178,16 +178,19 @@ CookPackage() {
 CookPkg() {
 	for pth in $args; do
 		_pth=$pth; cd $PwdDir
-		if [ $SkipPkg = true ]; then
+		if [ $KeepPkg = true ]; then
 			for pkg in $(ls $_pth); do
 				CookPackage
 				pth=$_pth; unset -f {Src,Pkg}
 				cd $PwdDir
 			done
 			CompressGrp
+		elif [ -d $pth ]; then cd $pth
+			find `pwd` -type f -name recipe | sort | while read pth; do
+				CookPackage; unset -f {Src,Pkg}
+			done
 		else
-			CookPackage
-			unset -f {Src,Pkg}
+			CookPackage; unset -f {Src,Pkg}
 		fi
 	done
 }
@@ -256,7 +259,7 @@ HelpMeUseIt() {
 	echo "       --root= (change root directory)"
 	echo "       --skip-cmp (don't compile the source)"
 	echo "       --keep-dbg (don't strip debug information)"
-	echo "       --skip-pkg (create group package)"
+	echo "       --keep-pkg (create group package)"
 }
 
 if [ -z "$1" ] || [ -z "$2" ] || [ $1 = "--help" ] || [ $1 = "-h" ]; then
@@ -268,7 +271,7 @@ for i in $@; do
 	elif [ ${i:0:7} = "--file=" ]; then file="${i:7:1000}"; src=true
 	elif [ "$i" = "--skip-cmp" ]; then SkipCmp=true
 	elif [ "$i" = "--keep-dbg" ]; then KeepDbg=true
-	elif [ "$i" = "--skip-pkg" ]; then SkipPkg=true
+	elif [ "$i" = "--keep-pkg" ]; then KeepPkg=true
 	elif [ "$i" = "cook" ]; then Cook=true
 	elif [ "$i" = "feed" ]; then Feed=true
 	elif [ "$i" = "free" ]; then Free=true
