@@ -1,4 +1,4 @@
-![Cheflex logo](img/cheflex.png)
+![Cheflex logo](http://www.selflex.org/img/cheflex.png)
 
 A simple yet flexible package manager.
 
