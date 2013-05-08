@@ -58,7 +58,7 @@ CompressPkg() {
 	cd $pkg; rm -f $pkg/$shr/info/dir
 
 	if [ $KeepPkg = false ]; then
-		echo "info: creating package: $n-$v"
+		echo "info: creating package: $n"
 	fi
 
 	if [ $KeepDbg = false ]; then
