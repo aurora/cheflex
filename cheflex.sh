@@ -29,41 +29,36 @@ PrepareSrc() {
 	echo "info: preparing source: $n-$v"
 	if [ $SkipCmp = false ]; then
 		if [ ! -f $TmpDir/$srcfile ]; then
-			cd $TmpDir
 			echo "      downloading $srcfile"
-			aria2c $u -o $srcfile
+			cd $TmpDir; aria2c $u -o $srcfile
 		fi
 
 		echo "      extracting $srcfile"
 		tar -C $src -xf $TmpDir/$srcfile
 	fi
 
-	echo "      done"
-	cd $BldDir
+	echo "      done"; cd $BldDir
 }
 
 CompileSrc() {
-	echo "      step 1: compile"
 	cd $src/$p
+	echo "      step 1: compile"
 	if type Src >/dev/null 2>&1; then Src; fi
 	cd $BldDir
 }
 
 CompilePkg() {
-	echo "      step 2: install"
 	cd $src/$p
+	echo "      step 2: install"
 	if type Pkg >/dev/null 2>&1; then export -f Pkg; fakeroot Pkg; fi
 	cd $BldDir
 }
 
 CompressPkg() {
+	cd $pkg; rm -f $pkg/$shr/info/dir
+
 	if [ $KeepPkg = false ]; then
 		echo "info: creating package: $n-$v"
-		rm -f $pkg/$shr/info/dir
-		cd $pkg
-	else
-		rm -f $pkg/$shr/info/dir
-		cd $pkg
 	fi
 
 	if [ $KeepDbg = false ]; then
@@ -84,6 +79,7 @@ CompressPkg() {
 		echo "      creating filelist"
 		LstDir=$pkg/$LstPth
 		FileLst="$LstDir/$n.lst"
+
 		if [ ! -d $LstDir ]; then mkdir -p $LstDir; fi
 		if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
 		lst=$(find -L . -type f | sed 's/.\//\//' | sort| cat)
@@ -107,26 +103,23 @@ CompressPkg() {
 		echo "      compressing file"
 		if [ ! -d $sys/pkg ]; then mkdir -p $sys/pkg; fi
 
-		rm -f $sys/pkg/$n-*
-		pkgfile=$n$PkgExt
+		rm -f $sys/pkg/$n-*; pkgfile=$n$PkgExt
 		fakeroot tar -cJf $sys/pkg/$pkgfile ./
-
 		rm -rf $pkg
 	fi
 	rm -rf $src
 
-	echo "      done"	
-	cd $BldDir
+	echo "      done"; cd $BldDir
 }
 
 CompressGrp() {
-	grp=$(basename $pth)
+	cd $GrpDir; grp=$(basename $pth)
 	echo "info: creating group: $grp"
-	cd $GrpDir
 
 	echo "      creating filelist"
 	LstDir=$GrpDir/$LstPth
 	FileLst="$LstDir/$grp.lst"
+
 	if [ ! -d $LstDir ]; then mkdir -p $LstDir; fi
 	if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
 	lst=$(find -L . -type f | sed 's/.\//\//' | sort | cat)
@@ -135,18 +128,14 @@ CompressGrp() {
 	echo "      compressing file"
 	if [ ! -d $SysDir/grp ]; then mkdir -p $SysDir/grp; fi
 
-	rm -f $SysDir/grp/$grp-*
-	pkgfile=$grp$PkgExt
+	rm -f $SysDir/grp/$grp-*; pkgfile=$grp$PkgExt
 	fakeroot tar -cJf $SysDir/grp/$pkgfile ./
-
 	rm -rf ./*
 
-	echo "      done"	
-	cd $BldDir
+	echo "      done"; cd $BldDir
 }
 
 CookPackage() {
-	if [ $KeepPkg = true ]; then pth=$_pth/$pkg/recipe; fi
 	. $pth; export n v u p
 
 	grp=$GrpDir
@@ -167,9 +156,9 @@ CookPackage() {
 	if [ $SkipCmp = true ]; then
 		CompilePkg
 	else
-		CompileSrc
-		CompilePkg	
+		CompileSrc; CompilePkg	
 	fi
+
 	echo "      done"
 
 	CompressPkg; p=""
@@ -177,18 +166,11 @@ CookPackage() {
 
 CookPkg() {
 	for pth in $args; do
-		_pth=$pth; cd $PwdDir
-		if [ $KeepPkg = true ]; then
-			for pkg in $(ls $_pth); do
-				CookPackage
-				pth=$_pth; unset -f {Src,Pkg}
-				cd $PwdDir
-			done
-			CompressGrp
-		elif [ -d $pth ]; then cd $pth
+		if [ -d $pth ]; then cd $pth
 			find `pwd` -type f -name recipe | sort | while read pth; do
 				CookPackage; unset -f {Src,Pkg}
 			done
+			if [ $KeepPkg = true ]; then CompressGrp; fi
 		else
 			CookPackage; unset -f {Src,Pkg}
 		fi
@@ -237,10 +219,8 @@ ListPkg() {
 
 OwnrPkg() {
 	for src in $args; do
-		for f in $(ls $LstPth); do
-			lst=$(cat $LstPth/$f 2>/dev/null)
-			for i in $lst; do
-				pkg=$(basename -s ".lst" $LstPth/$f)
+		for f in $(ls $LstPth); do lst=$(cat $LstPth/$f)
+			for i in $lst; do pkg=$(basename -s ".lst" $LstPth/$f)
 				if [ $i = $src ]; then echo "$pkg: $i"; fi
 			done
 		done
