@@ -181,17 +181,19 @@ FeedPkg() {
 	if [ ! -d $Root ]; then mkdir -p $Root; fi
 
 	if [ "$src" = true ]; then
-		name=$(basename "${file%%$PkgExt}")
-		echo "info: installing: $name"
+		pkg=$(basename -s ".pkg" $file)
+		echo "info: installing: $pkg"
 		tar -C $Root -xf $file
 	fi
 
 	for pkg in $args; do
 		if [ -d $pkg ]; then Root=`pwd`/$Root; cd $pkg
 			find `pwd` -type f -iname "*.pkg" | sort | while read _pkg; do
+				echo "info: installing: $(basename -s ".pkg" $_pkg)"
 				tar -C $Root -xf $_pkg
 			done
 		else
+			echo "info: installing: $pkg"
 			if [ -f $SysDir/grp/$pkg$PkgExt ]; then
 				tar -C $Root -xf $SysDir/grp/$pkg$PkgExt
 			else tar -C $Root -xf $SysDir/pkg/$pkg$PkgExt; fi
