@@ -178,20 +178,25 @@ CookPkg() {
 }
 
 FeedPkg() {
-	if [ ! -d $Root ]; then
-		mkdir -p $Root
-	fi
+	if [ ! -d $Root ]; then mkdir -p $Root; fi
 
 	if [ "$src" = true ]; then
 		name=$(basename "${file%%$PkgExt}")
 		echo "info: installing: $name"
 		tar -C $Root -xf $file
-	else
-		for name in $args; do
-			echo "info: installing: $name"
-			tar -C $Root -xf $SysDir/*/$name$PkgExt
-		done
 	fi
+
+	for pkg in $args; do
+		if [ -d $pkg ]; then Root=`pwd`/$Root; cd $pkg
+			find `pwd` -type f -iname "*.pkg" | sort | while read _pkg; do
+				tar -C $Root -xf $_pkg
+			done
+		else
+			if [ -f $SysDir/grp/$pkg$PkgExt ]; then
+				tar -C $Root -xf $SysDir/grp/$pkg$PkgExt
+			else tar -C $Root -xf $SysDir/pkg/$pkg$PkgExt; fi
+		fi
+	done
 }
 
 FreePkg() {
