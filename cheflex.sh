@@ -19,7 +19,7 @@ Root=$RootDir
 args=""
 
 PrepareSrc() {
-	for i in $grp $pkg $src $sys $tmp; do
+	for i in $grp $pkg $src $tmp; do
 		if [ ! -d $i ]; then mkdir -p $i; fi
 	done
 
@@ -77,10 +77,10 @@ CompressPkg() {
 
 	if [ $KeepPkg = false ]; then
 		echo "      creating filelist"
-		LstDir=$pkg/$LstPth
-		FileLst="$LstDir/$n.lst"
+		LstPth=$pkg/$LstDir
+		FileLst="$LstPth/$n.lst"
 
-		if [ ! -d $LstDir ]; then mkdir -p $LstDir; fi
+		if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
 		if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
 		lst=$(find -L . -type f | sed 's/.\//\//' | sort| cat)
 		for i in "$lst"; do echo "$i" >> $FileLst; done
@@ -89,7 +89,7 @@ CompressPkg() {
 			echo "      checking conflict"
 			for lst in $(ls $LstPth); do
 				_lst=$(basename -s .lst $lst)
-				if [ $_lst = $n ]; then echo break; fi
+				if [ $_lst = $n ]; then break; fi
 				for lst_x in $(cat $LstPth/$lst); do
 					for lst_y in $(cat $FileLst); do
 						if [ $lst_x = $lst_y ]; then
@@ -101,10 +101,8 @@ CompressPkg() {
 		fi
 
 		echo "      compressing file"
-		if [ ! -d $sys/pkg ]; then mkdir -p $sys/pkg; fi
-
-		rm -f $sys/pkg/$n-*; pkgfile=$n$PkgExt
-		fakeroot tar -cJf $sys/pkg/$pkgfile ./
+		rm -f $ChfDir/pkg/$n$PkgExt; pkgfile=$n$PkgExt
+		fakeroot tar -cJf $ChfDir/pkg/$pkgfile ./
 		rm -rf $pkg
 	fi
 	rm -rf $src
@@ -117,19 +115,17 @@ CompressGrp() {
 	echo "info: creating group: $grp"
 
 	echo "      creating filelist"
-	LstDir=$GrpDir/$LstPth
-	FileLst="$LstDir/$grp.lst"
+	LstPth=$GrpDir/$LstDir
+	FileLst="$LstPth/$grp.lst"
 
-	if [ ! -d $LstDir ]; then mkdir -p $LstDir; fi
+	if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
 	if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
 	lst=$(find -L . -type f | sed 's/.\//\//' | sort | cat)
 	for i in "$lst"; do echo "$i" >> $FileLst; done
 
 	echo "      compressing file"
-	if [ ! -d $SysDir/grp ]; then mkdir -p $SysDir/grp; fi
-
-	rm -f $SysDir/grp/$grp-*; pkgfile=$grp$PkgExt
-	fakeroot tar -cJf $SysDir/grp/$pkgfile ./
+	rm -f $ChfDir/grp/$grp$PkgExt; pkgfile=$grp$PkgExt
+	fakeroot tar -cJf $ChfDir/grp/$pkgfile ./
 	rm -rf ./*
 
 	echo "      done"; cd $BldDir
@@ -141,7 +137,6 @@ CookPackage() {
 	grp=$GrpDir
 	pkg=$PkgDir/$n
 	src=$SrcDir/$n
-	sys=$SysDir
 	tmp=$TmpDir
 
 	pth=$(dirname $pth); cd $pth; rcs=`pwd`
@@ -182,21 +177,21 @@ FeedPkg() {
 
 	if [ "$src" = true ]; then
 		pkg=$(basename -s ".pkg" $file)
-		echo "info: installing: $pkg"
+		echo "info: installing $pkg"
 		tar -C $Root -xf $file
 	fi
 
 	for pkg in $args; do
 		if [ -d $pkg ]; then Root=`pwd`/$Root; cd $pkg
 			find `pwd` -type f -iname "*.pkg" | sort | while read _pkg; do
-				echo "info: installing: $(basename -s ".pkg" $_pkg)"
+				echo "info: installing $(basename -s ".pkg" $_pkg)"
 				tar -C $Root -xf $_pkg
 			done
 		else
-			echo "info: installing: $pkg"
-			if [ -f $SysDir/grp/$pkg$PkgExt ]; then
-				tar -C $Root -xf $SysDir/grp/$pkg$PkgExt
-			else tar -C $Root -xf $SysDir/pkg/$pkg$PkgExt; fi
+			echo "info: installing $pkg"
+			if [ -f $ChfDir/grp/$pkg$PkgExt ]; then
+				tar -C $Root -xf $ChfDir/grp/$pkg$PkgExt
+			else tar -C $Root -xf $ChfDir/pkg/$pkg$PkgExt; fi
 		fi
 	done
 }
@@ -204,6 +199,7 @@ FeedPkg() {
 FreePkg() {
 	opt="--ignore-fail-on-non-empty"
 	for pkg in $args; do
+		echo "info: removing $pkg"
 		lst=$(cat $LstPth/$pkg.lst)
 
 		for i in $lst; do

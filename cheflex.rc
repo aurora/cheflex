@@ -1,22 +1,22 @@
 # Package managment
-PkgExt=".pkg"
-RootDir="/"
-LstPth="/var/lib/cheflex/lst"
-
-bin="/usr/bin"
 etc="/etc"
-lib="/usr/lib"
 run="/run"
-shr="/usr/share"
 usr="/usr"
 var="/var"
+bin="$usr/bin"
+lib="$usr/lib"
+shr="$usr/share"
+
+RootDir="/"
+PkgExt=".pkg"
+ChfDir="$var/lib/cheflex"
+LstDir="$ChfDir/lst"
 
 # Build Environment
 BldDir="$HOME/.cook"
 GrpDir="$BldDir/grp"
 PkgDir="$BldDir/pkg"
 SrcDir="$BldDir/src"
-SysDir="$BldDir/sys"
 TmpDir="$BldDir/tmp"
 
 # Compiler, Linker and Make Flags
