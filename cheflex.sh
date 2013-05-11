@@ -34,7 +34,7 @@ PrepareSrc() {
 		fi
 
 		echo "      extracting $srcfile"
-		tar -C $src -xf $TmpDir/$srcfile
+		tar -C $src -xpf $TmpDir/$srcfile
 	fi
 
 	echo "      done"; cd $BldDir
@@ -50,7 +50,9 @@ CompileSrc() {
 CompilePkg() {
 	cd $src/$p
 	echo "      step 2: install"
-	if type Pkg >/dev/null 2>&1; then export -f Pkg; fakeroot Pkg; fi
+	if type Pkg >/dev/null 2>&1; then
+		export -f Pkg; fakeroot -s /tmp/$n Pkg
+	fi
 	cd $BldDir
 }
 
@@ -102,8 +104,8 @@ CompressPkg() {
 
 		echo "      compressing file"
 		rm -f $ChfDir/pkg/$n$PkgExt; pkgfile=$n$PkgExt
-		fakeroot tar -cJf $ChfDir/pkg/$pkgfile ./
-		rm -rf $pkg
+		fakeroot -i /tmp/$n tar -cpJf $ChfDir/pkg/$pkgfile ./
+		rm -rf $pkg; rm /tmp/$n
 	fi
 	rm -rf $src
 
@@ -125,8 +127,8 @@ CompressGrp() {
 
 	echo "      compressing file"
 	rm -f $ChfDir/grp/$grp$PkgExt; pkgfile=$grp$PkgExt
-	fakeroot tar -cJf $ChfDir/grp/$pkgfile ./
-	rm -rf ./*
+	fakeroot -i /tmp/$n tar -cpJf $ChfDir/grp/$pkgfile ./
+	rm -rf ./*; rm /tmp/$n
 
 	echo "      done"; cd $BldDir
 }
@@ -178,20 +180,20 @@ FeedPkg() {
 	if [ "$src" = true ]; then
 		pkg=$(basename -s ".pkg" $file)
 		echo "info: installing $pkg"
-		tar -C $Root -xf $file
+		tar -C $Root -xpf $file
 	fi
 
 	for pkg in $args; do
 		if [ -d $pkg ]; then Root=`pwd`/$Root; cd $pkg
 			find `pwd` -type f -iname "*.pkg" | sort | while read _pkg; do
 				echo "info: installing $(basename -s ".pkg" $_pkg)"
-				tar -C $Root -xf $_pkg
+				tar -C $Root -xpf $_pkg
 			done
 		else
 			echo "info: installing $pkg"
 			if [ -f $ChfDir/grp/$pkg$PkgExt ]; then
-				tar -C $Root -xf $ChfDir/grp/$pkg$PkgExt
-			else tar -C $Root -xf $ChfDir/pkg/$pkg$PkgExt; fi
+				tar -C $Root -xpf $ChfDir/grp/$pkg$PkgExt
+			else tar -C $Root -xpf $ChfDir/pkg/$pkg$PkgExt; fi
 		fi
 	done
 }
