@@ -14,6 +14,7 @@ Ownr=false
 SkipCmp=false
 KeepDbg=false
 KeepPkg=false
+MakeGrp=false
 PwdDir=`pwd`
 StartDir=`pwd`
 Root=$RootDir
@@ -51,7 +52,17 @@ CompressPkg() {
 		echo "      installing files"; Pkg
 	fi
 
+	if [ $MakeGrp = true ]; then
+		pkg=$grp; _grp=$(basename "$_grp")
+	fi
+
+	echo "$pkg $grp $_grp $Root"; pwd
+
 	cd $pkg; rm -f $pkg/$shr/info/dir
+
+	if [ $MakeGrp = true ]; then
+		echo "info: creating group: $grp"
+	fi
 
 	if [ $KeepPkg = false ]; then
 		echo "info: creating package: $n"
@@ -71,11 +82,34 @@ CompressPkg() {
 		done
 	fi
 
+	echo "$pkg $grp $_grp $Root"; pwd
+
+	if [ "$MakeGrp" = true ]; then
+		echo "      creating filelist"
+		LstPth=$grp/$LstDir
+		FileLst="$LstPth/$_grp.lst"
+	fi
+
 	if [ "$KeepPkg" = false ]; then
 		echo "      creating filelist"
 		LstPth=$pkg/$LstDir
 		FileLst="$LstPth/$n.lst"
+	fi
 
+	if [ "$MakeGrp" = true ]; then
+		if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
+		if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
+		lst=$(find -L . -type f | sed 's/.\//\//' | sort | cat)
+		for i in "$lst"; do echo "$i" >> $FileLst; done
+
+		echo "      compressing file"
+		if [ "$Root" = "/" ]; then Root=$Root/$ChfDir/grp
+		else Root=$StartDir/$Root; mkdir -p $Root; fi
+		rm -f $Root/$_grp$PkgExt; pkgfile=$_grp$PkgExt
+		tar -cpJf $Root/$pkgfile ./; rm -rf ./*
+	fi
+
+	if [ "$KeepPkg" = false ]; then
 		if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
 		if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
 		lst=$(find -L . -type f | sed 's/.\//\//' | sort| cat)
@@ -106,27 +140,6 @@ CompressPkg() {
 	echo "      done"; cd $BldDir
 }
 
-CompressGrp() {
-	cd $GrpDir; grp=$(basename $pth)
-	echo "info: creating group: $grp"
-
-	echo "      creating filelist"
-	LstPth=$GrpDir/$LstDir
-	FileLst="$LstPth/$grp.lst"
-
-	if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
-	if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
-	lst=$(find -L . -type f | sed 's/.\//\//' | sort | cat)
-	for i in "$lst"; do echo "$i" >> $FileLst; done
-
-	echo "      compressing file"
-	if [ "$Root" = "/" ]; then Root=$Root/$ChfDir/grp
-	else Root=$StartDir/$Root; mkdir -p $Root; fi
-	rm -f $Root/$grp$PkgExt; pkgfile=$grp$PkgExt
-	tar -cpJf $Root/$pkgfile ./; rm -rf ./*
-	echo "      done"; cd $BldDir
-}
-
 CookPackage() {
 	. $pth; export n v u p
 	grp=$GrpDir; pkg=$PkgDir/$n; src=$SrcDir/$n; tmp=$TmpDir
@@ -141,7 +154,6 @@ CookPackage() {
 	export bin etc lib run shr usr var pkg src rcs
 	export SrcFunc PkgFunc KeepPkg KeepDbg SkipCmp
 
-
 	if [ $SkipCmp = true ]; then
 		export -f CompressPkg; fakeroot CompressPkg
 	else
@@ -153,16 +165,20 @@ CookPackage() {
 
 CookPkg() {
 	export Root StartDir GrpDir ChfDir LstDir BldDir PkgExt
-	export CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS
+	export CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS MakeGrp
 
 	for pth in $args; do
-		if [ -d $pth ]; then cd $pth
-			find `pwd` -type f -name recipe | sort | while read pth; do
-				CookPackage
+		if [ -d $pth ]; then _grp=$pth; export _grp; cd $pth
+			for y in $(find `pwd` -type f -name recipe | sort -r); do
+				for pth in $(find `pwd` -type f -name recipe | sort); do
+					echo "1:$y 2:$pth"
+					if [ "$y" = "$pth" ]; then
+						MakeGrp=true; export MakeGrp; CookPackage; break 2
+					else
+						CookPackage
+					fi
+				done
 			done
-			if [ $KeepPkg = true ]; then
-				export pth; export -f CompressGrp; fakeroot CompressGrp
-			fi
 		else
 			CookPackage
 		fi
