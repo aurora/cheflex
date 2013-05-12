@@ -15,6 +15,7 @@ SkipCmp=false
 KeepDbg=false
 KeepPkg=false
 PwdDir=`pwd`
+StartDir=`pwd`
 Root=$RootDir
 args=""
 
@@ -26,7 +27,7 @@ PrepareSrc() {
 	srcfile=$(basename $u)
 	if [ -z $p ]; then p=$n-$v; fi
 
-	echo "info: preparing source: $n-$v"
+	echo "info: preparing $n-$v"
 	if [ $SkipCmp = false ]; then
 		if [ ! -f $TmpDir/$srcfile ]; then
 			echo "      downloading $srcfile"
@@ -37,33 +38,26 @@ PrepareSrc() {
 		tar -C $src -xpf $TmpDir/$srcfile
 	fi
 
-	echo "      done"; cd $BldDir
-}
-
-CompileSrc() {
-	cd $src/$p
-	echo "      step 1: compile"
-	if type Src >/dev/null 2>&1; then Src; fi
-	cd $BldDir
-}
-
-CompilePkg() {
-	cd $src/$p
-	echo "      step 2: install"
-	if type Pkg >/dev/null 2>&1; then
-		export -f Pkg; fakeroot -s /tmp/$n Pkg
+	if [ $SrcFunc = true ]; then
+			cd $src/$p
+			echo "      compiling $n-$v"; Src
+			echo "      done"; cd $BldDir
 	fi
-	cd $BldDir
 }
 
 CompressPkg() {
+	if [ $PkgFunc = true ]; then
+		cd $src/$p
+		echo "      installing files"; Pkg
+	fi
+
 	cd $pkg; rm -f $pkg/$shr/info/dir
 
 	if [ $KeepPkg = false ]; then
 		echo "info: creating package: $n"
 	fi
 
-	if [ $KeepDbg = false ]; then
+	if [ "$KeepDbg" = false ]; then
 		echo "      stripping files"
 		find . -type f | while read _file; do
 			case $(file --mime-type -b $_file) in
@@ -77,7 +71,7 @@ CompressPkg() {
 		done
 	fi
 
-	if [ $KeepPkg = false ]; then
+	if [ "$KeepPkg" = false ]; then
 		echo "      creating filelist"
 		LstPth=$pkg/$LstDir
 		FileLst="$LstPth/$n.lst"
@@ -103,13 +97,13 @@ CompressPkg() {
 		fi
 
 		echo "      compressing file"
-		rm -f $ChfDir/pkg/$n$PkgExt; pkgfile=$n$PkgExt
-		fakeroot -i /tmp/$n tar -cpJf $ChfDir/pkg/$pkgfile ./
-		rm -rf $pkg; rm /tmp/$n
+		if [ "$Root" = "/" ]; then Root=$Root/$ChfDir/pkg
+		else Root=$StartDir/$Root; mkdir -p $Root; fi
+		rm -f $Root/$n$PkgExt; pkgfile=$n$PkgExt
+		tar -cpJf $Root/$pkgfile ./; rm -rf $pkg
 	fi
 	rm -rf $src
-
-	echo "      done"; cd $BldDir
+	echo "      done"; cd $BldDir; pwd
 }
 
 CompressGrp() {
@@ -121,55 +115,56 @@ CompressGrp() {
 	FileLst="$LstPth/$grp.lst"
 
 	if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
-	if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
+	if [ -f $FileLst ]; then echo "rm -rf $FileLst"; touch $FileLst; else touch $FileLst; fi
 	lst=$(find -L . -type f | sed 's/.\//\//' | sort | cat)
 	for i in "$lst"; do echo "$i" >> $FileLst; done
 
 	echo "      compressing file"
-	rm -f $ChfDir/grp/$grp$PkgExt; pkgfile=$grp$PkgExt
-	fakeroot -i /tmp/$n tar -cpJf $ChfDir/grp/$pkgfile ./
-	rm -rf ./*; rm /tmp/$n
-
+	if [ "$Root" = "/" ]; then Root=$Root/$ChfDir/grp
+	else Root=$StartDir/$Root; mkdir -p $Root; fi
+	echo "rm -f $Root/$grp$PkgExt"; pkgfile=$grp$PkgExt
+	echo "$Root"
+	tar -cpJf $Root/$pkgfile ./; rm -rf ./*
 	echo "      done"; cd $BldDir
 }
 
 CookPackage() {
 	. $pth; export n v u p
-
-	grp=$GrpDir
-	pkg=$PkgDir/$n
-	src=$SrcDir/$n
-	tmp=$TmpDir
+	grp=$GrpDir; pkg=$PkgDir/$n; src=$SrcDir/$n; tmp=$TmpDir
 
 	pth=$(dirname $pth); cd $pth; rcs=`pwd`
 	if [ $KeepPkg = true ]; then pkg=$grp; fi
 
+	SrcFunc=false; PkgFunc=false
+	if type Src >/dev/null 2>&1; then SrcFunc=true; export -f Src; fi
+	if type Pkg >/dev/null 2>&1; then PkgFunc=true; export -f Pkg; fi
+
+	echo $StartDir
+	export Root StartDir ChfDir LstDir BldDir PkgExt
 	export bin etc lib run shr usr var pkg src rcs
+	export SrcFunc PkgFunc KeepPkg KeepDbg SkipCmp
 	export CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS
 
-	PrepareSrc
-
-	echo "info: compiling source: $n-$v"
 	if [ $SkipCmp = true ]; then
-		CompilePkg
+		export -f CompressPkg; fakeroot CompressPkg
 	else
-		CompileSrc; CompilePkg	
+		PrepareSrc; export -f CompressPkg; fakeroot CompressPkg
 	fi
 
-	echo "      done"
-
-	CompressPkg; p=""
+	unset -f {Src,Pkg}; unset {SrcFunc,PkgFunc}; p=""
 }
 
 CookPkg() {
 	for pth in $args; do
 		if [ -d $pth ]; then cd $pth
 			find `pwd` -type f -name recipe | sort | while read pth; do
-				CookPackage; unset -f {Src,Pkg}
+				CookPackage
 			done
-			if [ $KeepPkg = true ]; then CompressGrp; fi
+			if [ $KeepPkg = true ]; then
+				export -f CompressGrp; fakeroot CompressGrp
+			fi
 		else
-			CookPackage; unset -f {Src,Pkg}
+			CookPackage
 		fi
 	done
 }
