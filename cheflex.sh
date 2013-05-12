@@ -103,7 +103,7 @@ CompressPkg() {
 		tar -cpJf $Root/$pkgfile ./; rm -rf $pkg
 	fi
 	rm -rf $src
-	echo "      done"; cd $BldDir; pwd
+	echo "      done"; cd $BldDir
 }
 
 CompressGrp() {
@@ -115,15 +115,14 @@ CompressGrp() {
 	FileLst="$LstPth/$grp.lst"
 
 	if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
-	if [ -f $FileLst ]; then echo "rm -rf $FileLst"; touch $FileLst; else touch $FileLst; fi
+	if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
 	lst=$(find -L . -type f | sed 's/.\//\//' | sort | cat)
 	for i in "$lst"; do echo "$i" >> $FileLst; done
 
 	echo "      compressing file"
 	if [ "$Root" = "/" ]; then Root=$Root/$ChfDir/grp
 	else Root=$StartDir/$Root; mkdir -p $Root; fi
-	echo "rm -f $Root/$grp$PkgExt"; pkgfile=$grp$PkgExt
-	echo "$Root"
+	rm -f $Root/$grp$PkgExt; pkgfile=$grp$PkgExt
 	tar -cpJf $Root/$pkgfile ./; rm -rf ./*
 	echo "      done"; cd $BldDir
 }
@@ -139,11 +138,9 @@ CookPackage() {
 	if type Src >/dev/null 2>&1; then SrcFunc=true; export -f Src; fi
 	if type Pkg >/dev/null 2>&1; then PkgFunc=true; export -f Pkg; fi
 
-	echo $StartDir
-	export Root StartDir ChfDir LstDir BldDir PkgExt
 	export bin etc lib run shr usr var pkg src rcs
 	export SrcFunc PkgFunc KeepPkg KeepDbg SkipCmp
-	export CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS
+
 
 	if [ $SkipCmp = true ]; then
 		export -f CompressPkg; fakeroot CompressPkg
@@ -155,13 +152,16 @@ CookPackage() {
 }
 
 CookPkg() {
+	export Root StartDir GrpDir ChfDir LstDir BldDir PkgExt
+	export CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS
+
 	for pth in $args; do
 		if [ -d $pth ]; then cd $pth
 			find `pwd` -type f -name recipe | sort | while read pth; do
 				CookPackage
 			done
 			if [ $KeepPkg = true ]; then
-				export -f CompressGrp; fakeroot CompressGrp
+				export pth; export -f CompressGrp; fakeroot CompressGrp
 			fi
 		else
 			CookPackage
