@@ -154,7 +154,7 @@ CookPackage() {
 		PrepareSrc; export -f CompressPkg; fakeroot CompressPkg
 	fi
 
-	unset -f {Src,Pkg}; unset {SrcFunc,PkgFunc}; pkg=""; p=""
+	unset -f {Src,Pkg}; unset {SrcFunc,PkgFunc}; p=""
 }
 
 CookPkg() {
