@@ -16,19 +16,20 @@ KeepDbg=false
 KeepPkg=false
 MakeGrp=false
 PwdDir=`pwd`
-StartDir=`pwd`
 Root=$RootDir
 args=""
 
 PrepareSrc() {
-	for i in $grp $pkg $src $tmp; do
+	if [ $KeepPkg = false ]; then cdir=($pkg $src $tmp)
+	else cdir=($grp $src $tmp); fi
+	for i in "${cdir[@]}"; do
 		if [ ! -d $i ]; then mkdir -p $i; fi
 	done
 
 	srcfile=$(basename $u)
 	if [ -z $p ]; then p=$n-$v; fi
 
-	echo "info: preparing $n-$v"
+	echo "cook: preparing $n-$v"
 	if [ $SkipCmp = false ]; then
 		if [ ! -f $TmpDir/$srcfile ]; then
 			echo "      downloading $srcfile"
@@ -42,30 +43,25 @@ PrepareSrc() {
 	if [ $SrcFunc = true ]; then
 			cd $src/$p
 			echo "      compiling $n-$v"; Src
-			echo "      done"; cd $BldDir
+			echo "done"; cd $BldDir
 	fi
 }
 
 CompressPkg() {
+	if [ $KeepPkg = true ]; then pkg=$grp; fi
+
 	if [ $PkgFunc = true ]; then
-		cd $src/$p
-		echo "      installing files"; Pkg
+		cd $src/$p; echo "      installing files"; Pkg
 	fi
 
 	if [ $MakeGrp = true ]; then
-		pkg=$grp; _grp=$(basename "$_grp")
+		_grp=$(basename "$_grp")
 	fi
 
-	echo "$pkg $grp $_grp $Root"; pwd
-
-	cd $pkg; rm -f $pkg/$shr/info/dir
-
-	if [ $MakeGrp = true ]; then
-		echo "info: creating group: $grp"
-	fi
-
-	if [ $KeepPkg = false ]; then
-		echo "info: creating package: $n"
+	if [ $MakeGrp = true ] || [ $KeepPkg = true ];then
+		cd $grp; rm -f $grp/$shr/info/dir
+	elif [ $KeepPkg = false ]; then
+		cd $pkg; rm -f $pkg/$shr/info/dir
 	fi
 
 	if [ "$KeepDbg" = false ]; then
@@ -82,39 +78,24 @@ CompressPkg() {
 		done
 	fi
 
-	echo "$pkg $grp $_grp $Root"; pwd
-
 	if [ "$MakeGrp" = true ]; then
 		echo "      creating filelist"
 		LstPth=$grp/$LstDir
 		FileLst="$LstPth/$_grp.lst"
-	fi
-
-	if [ "$KeepPkg" = false ]; then
+	elif [ "$KeepPkg" = false ]; then
 		echo "      creating filelist"
 		LstPth=$pkg/$LstDir
 		FileLst="$LstPth/$n.lst"
 	fi
 
-	if [ "$MakeGrp" = true ]; then
+	if [ "$MakeGrp" = true ] || [ "$KeepPkg" = false ]; then
 		if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
 		if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
 		lst=$(find -L . -type f | sed 's/.\//\//' | sort | cat)
 		for i in "$lst"; do echo "$i" >> $FileLst; done
-
-		echo "      compressing file"
-		if [ "$Root" = "/" ]; then Root=$Root/$ChfDir/grp
-		else Root=$StartDir/$Root; mkdir -p $Root; fi
-		rm -f $Root/$_grp$PkgExt; pkgfile=$_grp$PkgExt
-		tar -cpJf $Root/$pkgfile ./; rm -rf ./*
 	fi
 
-	if [ "$KeepPkg" = false ]; then
-		if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
-		if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
-		lst=$(find -L . -type f | sed 's/.\//\//' | sort| cat)
-		for i in "$lst"; do echo "$i" >> $FileLst; done
-
+	if [ "$MakeGrp" = true ] || [ "$KeepPkg" = false ]; then
 		if [ -d $LstPth ]; then
 			echo "      checking conflict"
 			for lst in $(ls $LstPth); do
@@ -129,15 +110,29 @@ CompressPkg() {
 				done
 			done
 		fi
+	fi
 
-		echo "      compressing file"
+	if [ $MakeGrp = true ]; then
+		echo "      compressing $_grp$PkgExt"
+		if [ "$Root" = "/" ]; then Root=$Root/$ChfDir/grp
+		else Root=$PwdDir/$Root; mkdir -p $Root; fi
+		rm -f $Root/$_grp$PkgExt; pkgfile=$_grp$PkgExt
+		tar -cpJf $Root/$pkgfile ./; rm -rf ./*
+	fi
+
+	if [ "$KeepPkg" = false ]; then
+		echo "      compressing $n$PkgExt"
 		if [ "$Root" = "/" ]; then Root=$Root/$ChfDir/pkg
-		else Root=$StartDir/$Root; mkdir -p $Root; fi
+		else Root=$PwdDir/$Root; mkdir -p $Root; fi
 		rm -f $Root/$n$PkgExt; pkgfile=$n$PkgExt
 		tar -cpJf $Root/$pkgfile ./; rm -rf $pkg
 	fi
 	rm -rf $src
-	echo "      done"; cd $BldDir
+
+	if [ $MakeGrp = true ]; then echo "done"; cd $BldDir
+	elif [ $KeepPkg = true ]; then cd $BldDir
+	else echo "done"; cd $BldDir; fi
+
 }
 
 CookPackage() {
@@ -145,13 +140,12 @@ CookPackage() {
 	grp=$GrpDir; pkg=$PkgDir/$n; src=$SrcDir/$n; tmp=$TmpDir
 
 	pth=$(dirname $pth); cd $pth; rcs=`pwd`
-	if [ $KeepPkg = true ]; then pkg=$grp; fi
 
 	SrcFunc=false; PkgFunc=false
 	if type Src >/dev/null 2>&1; then SrcFunc=true; export -f Src; fi
 	if type Pkg >/dev/null 2>&1; then PkgFunc=true; export -f Pkg; fi
 
-	export bin etc lib run shr usr var pkg src rcs
+	export bin etc lib run shr usr var grp pkg src rcs
 	export SrcFunc PkgFunc KeepPkg KeepDbg SkipCmp
 
 	if [ $SkipCmp = true ]; then
@@ -160,28 +154,26 @@ CookPackage() {
 		PrepareSrc; export -f CompressPkg; fakeroot CompressPkg
 	fi
 
-	unset -f {Src,Pkg}; unset {SrcFunc,PkgFunc}; p=""
+	unset -f {Src,Pkg}; unset {SrcFunc,PkgFunc}; pkg=""; p=""
 }
 
 CookPkg() {
-	export Root StartDir GrpDir ChfDir LstDir BldDir PkgExt
+	export Root PwdDir GrpDir ChfDir LstDir BldDir PkgExt
 	export CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS MakeGrp
 
 	for pth in $args; do
 		if [ -d $pth ]; then _grp=$pth; export _grp; cd $pth
 			for y in $(find `pwd` -type f -name recipe | sort -r); do
 				for pth in $(find `pwd` -type f -name recipe | sort); do
-					echo "1:$y 2:$pth"
-					if [ "$y" = "$pth" ]; then
-						MakeGrp=true; export MakeGrp; CookPackage; break 2
-					else
-						CookPackage
-					fi
+					if [ "$y" = "$pth" ] && [ $KeepPkg = true ]; then
+						MakeGrp=true; export MakeGrp
+						CookPackage; break 2
+					elif [ "$y" = "$pth" ] && [ $KeepPkg = false ]; then
+						CookPackage; break 2
+					else CookPackage; fi
 				done
 			done
-		else
-			CookPackage
-		fi
+		else CookPackage; fi
 	done
 }
 
@@ -190,18 +182,18 @@ FeedPkg() {
 
 	if [ "$src" = true ]; then
 		pkg=$(basename -s ".pkg" $file)
-		echo "info: installing $pkg"
+		echo "feed: installing $pkg"
 		tar -C $Root -xpf $file
 	fi
 
 	for pkg in $args; do
 		if [ -d $pkg ]; then Root=`pwd`/$Root; cd $pkg
 			find `pwd` -type f -iname "*.pkg" | sort | while read _pkg; do
-				echo "info: installing $(basename -s ".pkg" $_pkg)"
+				echo "feed: installing $(basename -s ".pkg" $_pkg)"
 				tar -C $Root -xpf $_pkg
 			done
 		else
-			echo "info: installing $pkg"
+			echo "feed: installing $pkg"
 			if [ -f $ChfDir/grp/$pkg$PkgExt ]; then
 				tar -C $Root -xpf $ChfDir/grp/$pkg$PkgExt
 			else tar -C $Root -xpf $ChfDir/pkg/$pkg$PkgExt; fi
@@ -212,17 +204,17 @@ FeedPkg() {
 FreePkg() {
 	opt="--ignore-fail-on-non-empty"
 	for pkg in $args; do
-		echo "info: removing $pkg"
+		echo "free: removing $pkg"
 		lst=$(cat $LstPth/$pkg.lst)
 
 		for i in $lst; do
-			if [ -L $Root$i ]; then unlink $Root$i; fi
-			if [ -f $Root$i ]; then rm $Root$i; fi
+			if [ -L $Root/$i ]; then unlink $Root/$i; fi
+			if [ -f $Root/$i ]; then rm $Root/$i; fi
 		done
 
 		for i in $lst; do
 			i=$(dirname $i)
-			if [ -d $Root$i ]; then rmdir -p $opt $Root$i; fi
+			if [ -d $Root/$i ]; then rmdir -p $opt $Root/$i; fi
 		done
 	done
 }
@@ -263,7 +255,7 @@ if [ -z "$1" ] || [ -z "$2" ] || [ $1 = "--help" ] || [ $1 = "-h" ]; then
 fi
 
 for i in $@; do
-	if [ ${i:0:7} = "--root=" ]; then Root="${i:7:1000}"; LstPth="$Root$LstPth"
+	if [ ${i:0:7} = "--root=" ]; then Root="${i:7:1000}"; LstPth="$Root/$LstDir"
 	elif [ ${i:0:7} = "--file=" ]; then file="${i:7:1000}"; src=true
 	elif [ "$i" = "--skip-cmp" ]; then SkipCmp=true
 	elif [ "$i" = "--keep-dbg" ]; then KeepDbg=true
