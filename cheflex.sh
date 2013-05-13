@@ -91,7 +91,7 @@ CompressPkg() {
 	if [ "$MakeGrp" = true ] || [ "$KeepPkg" = false ]; then
 		if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
 		if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
-		lst=$(find -L . -type f | sed 's/.\//\//' | sort | cat)
+		lst=$(find -L ./ | sed 's/.\//\//' | sort | cat)
 		for i in "$lst"; do echo "$i" >> $FileLst; done
 	fi
 
@@ -213,7 +213,6 @@ FreePkg() {
 		done
 
 		for i in $lst; do
-			i=$(dirname $i)
 			if [ -d $Root/$i ]; then rmdir -p $opt $Root/$i; fi
 		done
 	done
