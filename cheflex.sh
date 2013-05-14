@@ -172,13 +172,13 @@ CookPkg() {
 				for pth in $(find `pwd` -type f -name recipe | sort); do
 					if [ "$y" = "$pth" ] && [ $KeepPkg = true ]; then
 						CookGrp=true; export CookGrp
-						CookPackage; break 2
+						Compose; break 2
 					elif [ "$y" = "$pth" ] && [ $KeepPkg = false ]; then
-						CookPackage; break 2
-					else CookPackage; fi
+						Compose; break 2
+					else Compose; fi
 				done
 			done
-		else CookPackage; fi
+		else Compose; fi
 	done
 
 	rm -f $State
@@ -215,12 +215,10 @@ FreePkg() {
 		lst=$(cat $LstPth/$pkg.lst)
 
 		for i in $lst; do
+			_i=$(dirname $i)
 			if [ -L $Root/$i ]; then unlink $Root/$i; fi
-			if [ -f $Root/$i ]; then rm $Root/$i; fi
-		done
-
-		for i in $lst; do
-			if [ -d $Root/$i ]; then rmdir -p $opt $Root/$i; fi
+			if [ -d $Root/$i ]; then rmdir -pv $opt $Root/$i; fi
+			if [ -f $Root/$i ]; then rm $Root/$i; rmdir -pv $opt $Root/$_i; fi
 		done
 	done
 }
