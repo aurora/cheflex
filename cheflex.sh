@@ -97,13 +97,14 @@ Package() {
 		for i in "$lst"; do echo "$i" >> $FileLst; done
 	fi
 
-	if [ "$CookGrp" = true ] || [ "$KeepPkg" = false ]; then
+	if [ "$KeepPkg" = false ]; then
 		if [ -d $LstPth ]; then
 			echo "      checking conflict"
 			for lst in $(ls $LstPth); do
 				_lst=$(basename -s .lst $lst)
 				if [ $_lst = $n ]; then break; fi
 				for lst_x in $(cat $LstPth/$lst); do
+					if [ -d $lst_x ]; then continue; fi
 					for lst_y in $(cat $FileLst); do
 						if [ $lst_x = $lst_y ]; then
 							echo "      $n: conflicts $_lst: $lst_y"
@@ -135,7 +136,7 @@ Package() {
 
 }
 
-CookPackage() {
+Compose() {
 	. $pth; export n v u p
 	grp=$GrpDir; pkg=$PkgDir/$n; src=$SrcDir/$n; tmp=$TmpDir
 
@@ -150,18 +151,9 @@ CookPackage() {
 
 	if [ $FirstTime = false ] && [ $KeepPkg = true ]; then
 		export FirstTime=true
-		if [ $SkipCmp = true ]; then
-			export -f Package; fakeroot -s $State Package
-		else 
-			echo "$State"
-			Source; export -f Package; fakeroot -s $State Package
-		fi
+		Source; export -f Package; fakeroot -s $State Package
 	elif [ $KeepPkg = true ]; then
-		if [ $SkipCmp = true ]; then
-			export -f Package; fakeroot -i $State -s $State Package
-		else 
-			Source; export -f Package; fakeroot -i $State -s $State Package
-		fi
+		Source; export -f Package; fakeroot -i $State -s $State Package
 	else
 		if [ $SkipCmp = true ]; then export -f Package; fakeroot Package
 		else Source; export -f Package; fakeroot Package; fi
