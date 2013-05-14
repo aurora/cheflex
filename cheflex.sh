@@ -14,15 +14,17 @@ Ownr=false
 SkipCmp=false
 KeepDbg=false
 KeepPkg=false
-MakeGrp=false
+CookGrp=false
 PwdDir=`pwd`
 Root=$RootDir
+FirstTime=false
+State="/tmp/cook"
 args=""
 
-PrepareSrc() {
-	if [ $KeepPkg = false ]; then cdir=($pkg $src $tmp)
-	else cdir=($grp $src $tmp); fi
-	for i in "${cdir[@]}"; do
+Source() {
+	if [ $KeepPkg = false ]; then _dirs=($pkg $src $tmp)
+	else _dirs=($grp $src $tmp); fi
+	for i in "${_dirs[@]}"; do
 		if [ ! -d $i ]; then mkdir -p $i; fi
 	done
 
@@ -47,18 +49,18 @@ PrepareSrc() {
 	fi
 }
 
-CompressPkg() {
+Package() {
 	if [ $KeepPkg = true ]; then pkg=$grp; fi
 
 	if [ $PkgFunc = true ]; then
 		cd $src/$p; echo "      installing files"; Pkg
 	fi
 
-	if [ $MakeGrp = true ]; then
+	if [ $CookGrp = true ]; then
 		_grp=$(basename "$_grp")
 	fi
 
-	if [ $MakeGrp = true ] || [ $KeepPkg = true ];then
+	if [ $CookGrp = true ] || [ $KeepPkg = true ];then
 		cd $grp; rm -f $grp/$shr/info/dir
 	elif [ $KeepPkg = false ]; then
 		cd $pkg; rm -f $pkg/$shr/info/dir
@@ -78,7 +80,7 @@ CompressPkg() {
 		done
 	fi
 
-	if [ "$MakeGrp" = true ]; then
+	if [ "$CookGrp" = true ]; then
 		echo "      creating filelist"
 		LstPth=$grp/$LstDir
 		FileLst="$LstPth/$_grp.lst"
@@ -88,14 +90,14 @@ CompressPkg() {
 		FileLst="$LstPth/$n.lst"
 	fi
 
-	if [ "$MakeGrp" = true ] || [ "$KeepPkg" = false ]; then
+	if [ "$CookGrp" = true ] || [ "$KeepPkg" = false ]; then
 		if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
 		if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
 		lst=$(find -L ./ | sed 's/.\//\//' | sort | cat)
 		for i in "$lst"; do echo "$i" >> $FileLst; done
 	fi
 
-	if [ "$MakeGrp" = true ] || [ "$KeepPkg" = false ]; then
+	if [ "$CookGrp" = true ] || [ "$KeepPkg" = false ]; then
 		if [ -d $LstPth ]; then
 			echo "      checking conflict"
 			for lst in $(ls $LstPth); do
@@ -112,24 +114,22 @@ CompressPkg() {
 		fi
 	fi
 
-	if [ $MakeGrp = true ]; then
+	if [ $CookGrp = true ]; then
 		echo "      compressing $_grp$PkgExt"
-		if [ "$Root" = "/" ]; then Root=$Root/$ChfDir/grp
-		else Root=$PwdDir/$Root; mkdir -p $Root; fi
+		if [ "$Root" = "/" ]; then Root=$ChfDir/grp
+		else Root=$PwdDir/$Root/$ChfDir/grp; mkdir -p $Root; fi
 		rm -f $Root/$_grp$PkgExt; pkgfile=$_grp$PkgExt
 		tar -cpJf $Root/$pkgfile ./; rm -rf ./*
-	fi
-
-	if [ "$KeepPkg" = false ]; then
+	elif [ "$KeepPkg" = false ]; then
 		echo "      compressing $n$PkgExt"
-		if [ "$Root" = "/" ]; then Root=$Root/$ChfDir/pkg
-		else Root=$PwdDir/$Root; mkdir -p $Root; fi
+		if [ "$Root" = "/" ]; then Root=$ChfDir/pkg
+		else Root=$PwdDir/$Root/$ChfDir/pkg; mkdir -p $Root; fi
 		rm -f $Root/$n$PkgExt; pkgfile=$n$PkgExt
 		tar -cpJf $Root/$pkgfile ./; rm -rf $pkg
 	fi
 	rm -rf $src
 
-	if [ $MakeGrp = true ]; then echo "done"; cd $BldDir
+	if [ $CookGrp = true ]; then echo "done"; cd $BldDir
 	elif [ $KeepPkg = true ]; then cd $BldDir
 	else echo "done"; cd $BldDir; fi
 
@@ -146,27 +146,40 @@ CookPackage() {
 	if type Pkg >/dev/null 2>&1; then PkgFunc=true; export -f Pkg; fi
 
 	export bin etc lib run shr usr var grp pkg src rcs
-	export SrcFunc PkgFunc KeepPkg KeepDbg SkipCmp
+	export SrcFunc PkgFunc KeepPkg KeepDbg SkipCmp State
 
-	if [ $SkipCmp = true ]; then
-		export -f CompressPkg; fakeroot CompressPkg
+	if [ $FirstTime = false ] && [ $KeepPkg = true ]; then
+		export FirstTime=true
+		if [ $SkipCmp = true ]; then
+			export -f Package; fakeroot -s $State Package
+		else 
+			echo "$State"
+			Source; export -f Package; fakeroot -s $State Package
+		fi
+	elif [ $KeepPkg = true ]; then
+		if [ $SkipCmp = true ]; then
+			export -f Package; fakeroot -i $State -s $State Package
+		else 
+			Source; export -f Package; fakeroot -i $State -s $State Package
+		fi
 	else
-		PrepareSrc; export -f CompressPkg; fakeroot CompressPkg
-	fi
+		if [ $SkipCmp = true ]; then export -f Package; fakeroot Package
+		else Source; export -f Package; fakeroot Package; fi
+	fi		
 
 	unset -f {Src,Pkg}; unset {SrcFunc,PkgFunc}; p=""
 }
 
 CookPkg() {
 	export Root PwdDir GrpDir ChfDir LstDir BldDir PkgExt
-	export CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS MakeGrp
+	export CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS CookGrp
 
 	for pth in $args; do
 		if [ -d $pth ]; then _grp=$pth; export _grp; cd $pth
 			for y in $(find `pwd` -type f -name recipe | sort -r); do
 				for pth in $(find `pwd` -type f -name recipe | sort); do
 					if [ "$y" = "$pth" ] && [ $KeepPkg = true ]; then
-						MakeGrp=true; export MakeGrp
+						CookGrp=true; export CookGrp
 						CookPackage; break 2
 					elif [ "$y" = "$pth" ] && [ $KeepPkg = false ]; then
 						CookPackage; break 2
@@ -175,6 +188,8 @@ CookPkg() {
 			done
 		else CookPackage; fi
 	done
+
+	rm -f $State
 }
 
 FeedPkg() {
