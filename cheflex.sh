@@ -18,6 +18,7 @@ CookGrp=false
 PwdDir=`pwd`
 Root=$RootDir
 FirstTime=false
+LastTime=false
 State="/tmp/cook"
 args=""
 
@@ -120,7 +121,7 @@ Package() {
 		if [ "$Root" = "/" ]; then Root=$ChfDir/grp
 		else Root=$PwdDir/$Root/$ChfDir/grp; mkdir -p $Root; fi
 		rm -f $Root/$_grp$PkgExt; pkgfile=$_grp$PkgExt
-		tar -cpJf $Root/$pkgfile ./; rm -rf ./*
+		tar -cpJf $Root/$pkgfile ./; rm -rf ./*; rm -f $State
 	elif [ "$KeepPkg" = false ]; then
 		echo "      compressing $n$PkgExt"
 		if [ "$Root" = "/" ]; then Root=$ChfDir/pkg
@@ -152,6 +153,9 @@ Compose() {
 	if [ $FirstTime = false ] && [ $KeepPkg = true ]; then
 		export FirstTime=true
 		Source; export -f Package; fakeroot -s $State Package
+	elif [ $LastTime = false ] && [ $CookGrp = true ]; then
+		export LastTime=true
+		Source; export -f Package; fakeroot -i $State Package
 	elif [ $KeepPkg = true ]; then
 		Source; export -f Package; fakeroot -i $State -s $State Package
 	else
@@ -180,8 +184,6 @@ CookPkg() {
 			done
 		else Compose; fi
 	done
-
-	rm -f $State
 }
 
 FeedPkg() {
@@ -217,8 +219,8 @@ FreePkg() {
 		for i in $lst; do
 			_i=$(dirname $i)
 			if [ -L $Root/$i ]; then unlink $Root/$i; fi
-			if [ -d $Root/$i ]; then rmdir -pv $opt $Root/$i; fi
-			if [ -f $Root/$i ]; then rm $Root/$i; rmdir -pv $opt $Root/$_i; fi
+			if [ -d $Root/$i ]; then rmdir -p $opt $Root/$i; fi
+			if [ -f $Root/$i ]; then rm $Root/$i; rmdir -p $opt $Root/$_i; fi
 		done
 	done
 }
