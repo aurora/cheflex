@@ -214,13 +214,13 @@ FreePkg() {
 	opt="--ignore-fail-on-non-empty"
 	for pkg in $args; do
 		echo "free: removing $pkg"
-		lst=$(cat $LstPth/$pkg.lst)
+		lst=$(tac $LstPth/$pkg.lst)
 
 		for i in $lst; do
 			_i=$(dirname $i)
-			if [ -L $Root/$i ]; then unlink $Root/$i; fi
-			if [ -d $Root/$i ]; then rmdir -p $opt $Root/$i; fi
-			if [ -f $Root/$i ]; then rm $Root/$i; rmdir -p $opt $Root/$_i; fi
+			if [ -L $Root/$i ]; then unlink $Root/$i
+			elif [ -f $Root/$i ]; then rm $Root/$i; rmdir -p $opt $Root/$_i
+			elif [ -d $Root/$i ]; then rmdir -p $opt $Root/$i; fi
 		done
 	done
 }
