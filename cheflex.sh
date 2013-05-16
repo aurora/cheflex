@@ -244,11 +244,11 @@ OwnrPkg() {
 HelpMeUseIt() {
 	echo "usage: cheflex <options> <package(s)> "
 	echo "options:"
-	echo "       cook (build package(s))"
-	echo "       feed (install package(s))"
-	echo "       free (remove package(s))"
-	echo "       list (list package content)"
-	echo "       ownr (check package owner"
+	echo "       -c, cook (build package(s))"
+	echo "       -i, feed (install package(s))"
+	echo "       -r, free (remove package(s))"
+	echo "       -l, list (list package content)"
+	echo "       -o, ownr (check package owner"
 	echo "       --file= (local file(s))"
 	echo "       --root= (change root directory)"
 	echo "       --skip-cmp (don't compile the source)"
@@ -266,11 +266,11 @@ for i in $@; do
 	elif [ "$i" = "--skip-cmp" ]; then SkipCmp=true
 	elif [ "$i" = "--keep-dbg" ]; then KeepDbg=true
 	elif [ "$i" = "--keep-pkg" ]; then KeepPkg=true
-	elif [ "$i" = "cook" ]; then Cook=true
-	elif [ "$i" = "feed" ]; then Feed=true
-	elif [ "$i" = "free" ]; then Free=true
-	elif [ "$i" = "list" ]; then List=true
-	elif [ "$i" = "ownr" ]; then Ownr=true
+	elif [ "$i" = "-c" ] || [ "$i" = "cook" ]; then Cook=true
+	elif [ "$i" = "-i" ] || [ "$i" = "feed" ]; then Feed=true
+	elif [ "$i" = "-r" ] || [ "$i" = "free" ]; then Free=true
+	elif [ "$i" = "-l" ] || [ "$i" = "list" ]; then List=true
+	elif [ "$i" = "-o" ] || [ "$i" = "ownr" ]; then Ownr=true
 	else args="$args $i"; fi
 done
 
