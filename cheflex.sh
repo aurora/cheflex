@@ -14,7 +14,7 @@ Ownr=false
 SkipCmp=false
 KeepDbg=false
 KeepPkg=false
-SkipUrl=false
+SkipExt=false
 CookGrp=false
 PwdDir=`pwd`
 Root=$RootDir
@@ -30,7 +30,7 @@ Source() {
 		if [ ! -d $i ]; then mkdir -p $i; fi
 	done
 
-	if [ $SkipUrl = false ] && [ -n "$u" ]; then
+	if [ $SkipExt = false ] && [ -n "$u" ]; then
 		srcfile=$(basename $u)
 		if [ -z "$p" ]; then p=$n-$v; fi
 
@@ -258,7 +258,7 @@ HelpMeUseIt() {
 	echo "       --skip-cmp (don't compile the source)"
 	echo "       --keep-dbg (don't strip debug information)"
 	echo "       --keep-pkg (create group package)"
-	echo "       --skip-url (don't compile the source)"
+	echo "       --skip-ext (don't extract the source)"
 }
 
 if [ -z "$1" ] || [ -z "$2" ] || [ $1 = "--help" ] || [ $1 = "-h" ]; then
@@ -270,8 +270,8 @@ for i in $@; do
 	elif [ ${i:0:7} = "--file=" ]; then file="${i:7:1000}"; src=true
 	elif [ "$i" = "--skip-cmp" ]; then SkipCmp=true
 	elif [ "$i" = "--keep-dbg" ]; then KeepDbg=true
+	elif [ "$i" = "--skip-ext" ]; then SkipExt=true
 	elif [ "$i" = "--keep-pkg" ]; then KeepPkg=true
-	elif [ "$i" = "--skip-url" ]; then SkipUrl=true
 	elif [ "$i" = "-c" ] || [ "$i" = "cook" ]; then Cook=true
 	elif [ "$i" = "-i" ] || [ "$i" = "feed" ]; then Feed=true
 	elif [ "$i" = "-r" ] || [ "$i" = "free" ]; then Free=true
