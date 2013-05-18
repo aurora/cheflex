@@ -9,6 +9,7 @@ shr="$usr/share"
 
 RootDir="/"
 PkgExt=".pkg"
+Recipe="recipe"
 ChfDir="$var/lib/cheflex"
 LstDir="$ChfDir/lst"
 

@@ -14,6 +14,7 @@ Ownr=false
 SkipCmp=false
 KeepDbg=false
 KeepPkg=false
+SkipUrl=false
 CookGrp=false
 PwdDir=`pwd`
 Root=$RootDir
@@ -29,18 +30,20 @@ Source() {
 		if [ ! -d $i ]; then mkdir -p $i; fi
 	done
 
-	srcfile=$(basename $u)
-	if [ -z $p ]; then p=$n-$v; fi
+	if [ $SkipUrl = false ] && [ -n "$u" ]; then
+		srcfile=$(basename $u)
+		if [ -z "$p" ]; then p=$n-$v; fi
 
-	echo "cook: preparing $n-$v"
-	if [ $SkipCmp = false ]; then
-		if [ ! -f $TmpDir/$srcfile ]; then
-			echo "      downloading $srcfile"
-			cd $TmpDir; aria2c $u -o $srcfile
+		echo "cook: preparing $n-$v"
+		if [ $SkipCmp = false ]; then
+			if [ ! -f $TmpDir/$srcfile ]; then
+				echo "      downloading $srcfile"
+				cd $TmpDir; aria2c $u -o $srcfile
+			fi
+
+			echo "      extracting $srcfile"
+			tar -C $src -xpf $TmpDir/$srcfile
 		fi
-
-		echo "      extracting $srcfile"
-		tar -C $src -xpf $TmpDir/$srcfile
 	fi
 
 	if [ $SrcFunc = true ]; then
@@ -172,8 +175,8 @@ CookPkg() {
 
 	for pth in $args; do
 		if [ -d $pth ]; then _grp=$pth; export _grp; cd $pth
-			for y in $(find `pwd` -type f -name recipe | sort -r); do
-				for pth in $(find `pwd` -type f -name recipe | sort); do
+			for y in $(find `pwd` -type f -name $Recipe | sort -r); do
+				for pth in $(find `pwd` -type f -name $Recipe | sort); do
 					if [ "$y" = "$pth" ] && [ $KeepPkg = true ]; then
 						CookGrp=true; export CookGrp
 						Compose; break 2
@@ -196,16 +199,17 @@ FeedPkg() {
 	fi
 
 	for pkg in $args; do
-		if [ -d $pkg ]; then Root=`pwd`/$Root; cd $pkg
+		if [ ! -d $pkg ] || [ -f $pkg/$Recipe ]; then
+			echo "feed: installing $pkg"
+			if [ -f $ChfDir/grp/$pkg$PkgExt ]; then
+				tar -C $Root -xpf $ChfDir/grp/$pkg$PkgExt
+			else tar -C $Root -xpf $ChfDir/pkg/$pkg$PkgExt
+			fi
+		elif [ -d $pkg ]; then Root=`pwd`/$Root; cd $pkg
 			find `pwd` -type f -iname "*.pkg" | sort | while read _pkg; do
 				echo "feed: installing $(basename -s ".pkg" $_pkg)"
 				tar -C $Root -xpf $_pkg
 			done
-		else
-			echo "feed: installing $pkg"
-			if [ -f $ChfDir/grp/$pkg$PkgExt ]; then
-				tar -C $Root -xpf $ChfDir/grp/$pkg$PkgExt
-			else tar -C $Root -xpf $ChfDir/pkg/$pkg$PkgExt; fi
 		fi
 	done
 }
@@ -254,6 +258,7 @@ HelpMeUseIt() {
 	echo "       --skip-cmp (don't compile the source)"
 	echo "       --keep-dbg (don't strip debug information)"
 	echo "       --keep-pkg (create group package)"
+	echo "       --skip-url (don't compile the source)"
 }
 
 if [ -z "$1" ] || [ -z "$2" ] || [ $1 = "--help" ] || [ $1 = "-h" ]; then
@@ -266,6 +271,7 @@ for i in $@; do
 	elif [ "$i" = "--skip-cmp" ]; then SkipCmp=true
 	elif [ "$i" = "--keep-dbg" ]; then KeepDbg=true
 	elif [ "$i" = "--keep-pkg" ]; then KeepPkg=true
+	elif [ "$i" = "--skip-url" ]; then SkipUrl=true
 	elif [ "$i" = "-c" ] || [ "$i" = "cook" ]; then Cook=true
 	elif [ "$i" = "-i" ] || [ "$i" = "feed" ]; then Feed=true
 	elif [ "$i" = "-r" ] || [ "$i" = "free" ]; then Free=true
