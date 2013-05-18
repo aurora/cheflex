@@ -257,8 +257,8 @@ HelpMeUseIt() {
 	echo "       --root= (change root directory)"
 	echo "       --skip-cmp (don't compile the source)"
 	echo "       --keep-dbg (don't strip debug information)"
-	echo "       --keep-pkg (create group package)"
 	echo "       --skip-ext (don't extract the source)"
+	echo "       --keep-pkg (create group package)"
 }
 
 if [ -z "$1" ] || [ -z "$2" ] || [ $1 = "--help" ] || [ $1 = "-h" ]; then
