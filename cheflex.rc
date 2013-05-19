@@ -7,7 +7,7 @@ bin="$usr/bin"
 lib="$usr/lib"
 shr="$usr/share"
 
-RootDir="/"
+Root="/"
 PkgExt=".pkg"
 Recipe="recipe"
 ChfDir="$var/lib/cheflex"

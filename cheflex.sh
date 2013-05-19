@@ -16,11 +16,11 @@ KeepDbg=false
 KeepPkg=false
 SkipExt=false
 CookGrp=false
-PwdDir=`pwd`
-Root=$RootDir
 FirstTime=false
 LastTime=false
-State="/tmp/cook"
+LstPth=""
+PwdDir=`pwd`
+State="/tmp/fakeroot"
 args=""
 
 Source() {
@@ -102,19 +102,20 @@ Package() {
 	fi
 
 	if [ "$KeepPkg" = false ]; then
-		if [ -d $LstPth ]; then
+		if [ -d "$LstDir" ]; then
 			echo "      checking conflict"
-			for lst in $(ls $LstPth); do
-				_lst=$(basename -s .lst $lst)
-				if [ $_lst = $n ]; then break; fi
-				for lst_x in $(cat $LstPth/$lst); do
-					if [ -d $lst_x ]; then continue; fi
-					for lst_y in $(cat $FileLst); do
-						if [ $lst_x = $lst_y ]; then
-							echo "      $n: conflicts $_lst: $lst_y"
+			lsts=$(find $LstDir -type f -iname "*.lst" | sort)
+			for lst in $lsts; do pkg=$(basename -s ".lst" $lst)
+				if [ $pkg = $n ]; then break; fi
+				if [ $pkg = "linux" ]; then break; fi
+				while read ln_x; do
+					if [ -d "$ln_x" ]; then continue; fi
+					while read ln_y; do
+						if [ "$ln_x" = "$ln_y" ]; then
+							echo "      $n: conflicts $lst: $ln_y"
 						fi
-					done
-				done
+					done < $FileLst
+				done < $lst
 			done
 		fi
 	fi
@@ -218,11 +219,13 @@ FreePkg() {
 	opt="--ignore-fail-on-non-empty"
 	for pkg in $args; do
 		echo "free: removing $pkg"
-		lst=$(tac $LstPth/$pkg.lst)
+		if [ -f "$LstPth/$pkg.lst" ]; then LstDir=$LstPth; fi
+		lst=$(tac $LstDir/$pkg.lst)
 
 		for i in $lst; do
 			_i=$(dirname $i)
-			if [ -L $Root/$i ]; then unlink $Root/$i
+			if [ "$_i" = "/" ]; then continue
+			elif [ -L $Root/$i ]; then unlink $Root/$i
 			elif [ -f $Root/$i ]; then rm $Root/$i; rmdir -p $opt $Root/$_i
 			elif [ -d $Root/$i ]; then rmdir -p $opt $Root/$i; fi
 		done
@@ -231,16 +234,20 @@ FreePkg() {
 
 ListPkg() {
 	for pkg in $args; do
-		cat $LstPth/$pkg.lst
+		if [ -f "$LstPth/$pkg.lst" ]; then cat $LstPth/$pkg.lst
+		elif [ -f "$LstDir/$pkg.lst" ]; then cat $LstDir/$pkg.lst; fi
 	done
 }
 
 OwnrPkg() {
+	if [ -n "$LstPth" ]; then LstDir=$LstPth; fi
+
 	for src in $args; do
-		for f in $(ls $LstPth); do lst=$(cat $LstPth/$f)
-			for i in $lst; do pkg=$(basename -s ".lst" $LstPth/$f)
-				if [ $i = $src ]; then echo "$pkg: $i"; fi
-			done
+		lst=$(find $LstDir -type f -iname "*.lst" | sort)
+		for x in $lst; do pkg=$(basename -s ".lst" $x)
+			while read y; do
+				if [ $y = $src ]; then echo "$pkg: $y"; fi
+			done < $x
 		done
 	done
 }
@@ -261,7 +268,7 @@ HelpMeUseIt() {
 	echo "       --keep-pkg (create group package)"
 }
 
-if [ -z "$1" ] || [ -z "$2" ] || [ $1 = "--help" ] || [ $1 = "-h" ]; then
+if [ -z "$1" ] || [ -z "$2" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
 	HelpMeUseIt; exit 0
 fi
 
