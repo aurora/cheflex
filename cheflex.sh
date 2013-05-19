@@ -105,9 +105,9 @@ Package() {
 		if [ -d "$LstDir" ]; then
 			echo "      checking conflict"
 			lsts=$(find $LstDir -type f -iname "*.lst" | sort)
-			for lst in $lsts; do pkg=$(basename -s ".lst" $lst)
-				if [ $pkg = $n ]; then break; fi
-				if [ $pkg = "linux" ]; then break; fi
+			for lst in $lsts; do _pkg=$(basename -s ".lst" $lst)
+				if [ $_pkg = $n ]; then break; fi
+				if [ $_pkg = "linux" ]; then continue; fi
 				while read ln_x; do
 					if [ -d "$ln_x" ]; then continue; fi
 					while read ln_y; do
