@@ -253,19 +253,19 @@ OwnrPkg() {
 }
 
 HelpMeUseIt() {
-	echo "usage: cheflex <options> <package(s)> "
+	echo "usage: cheflex [options] package(s)"
 	echo "options:"
-	echo "       -c, cook (build package(s))"
-	echo "       -i, feed (install package(s))"
-	echo "       -r, free (remove package(s))"
-	echo "       -l, list (list package content)"
-	echo "       -o, ownr (check package owner"
-	echo "       --file= (local file(s))"
-	echo "       --root= (change root directory)"
-	echo "       --skip-cmp (don't compile the source)"
-	echo "       --keep-dbg (don't strip debug information)"
-	echo "       --skip-ext (don't extract the source)"
-	echo "       --keep-pkg (create group package)"
+	echo "  -b, cook             build package(s)"
+	echo "  -i, feed             install package(s)"
+	echo "  -r, free             remove package(s)"
+	echo "  -l, list             list package content"
+	echo "  -o, ownr             check package owner"
+	echo "  --file=<file>        local file(s)"
+	echo "  --root=<directory>   change root directory"
+	echo "  --skip-cmp           don't compile the source"
+	echo "  --keep-dbg           don't strip debug information"
+	echo "  --skip-ext           don't extract the source"
+	echo "  --keep-pkg           create group package"
 }
 
 if [ -z "$1" ] || [ -z "$2" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
@@ -276,10 +276,10 @@ for i in $@; do
 	if [ ${i:0:7} = "--root=" ]; then Root="${i:7:1000}"; LstPth="$Root/$LstDir"
 	elif [ ${i:0:7} = "--file=" ]; then file="${i:7:1000}"; src=true
 	elif [ "$i" = "--skip-cmp" ]; then SkipCmp=true
-	elif [ "$i" = "--keep-dbg" ]; then KeepDbg=true
 	elif [ "$i" = "--skip-ext" ]; then SkipExt=true
+	elif [ "$i" = "--keep-dbg" ]; then KeepDbg=true
 	elif [ "$i" = "--keep-pkg" ]; then KeepPkg=true
-	elif [ "$i" = "-c" ] || [ "$i" = "cook" ]; then Cook=true
+	elif [ "$i" = "-b" ] || [ "$i" = "cook" ]; then Cook=true
 	elif [ "$i" = "-i" ] || [ "$i" = "feed" ]; then Feed=true
 	elif [ "$i" = "-r" ] || [ "$i" = "free" ]; then Free=true
 	elif [ "$i" = "-l" ] || [ "$i" = "list" ]; then List=true
