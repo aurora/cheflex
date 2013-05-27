@@ -21,8 +21,8 @@ SrcDir="$BldDir/src"
 TmpDir="$BldDir/tmp"
 
 # Compiler, Linker and Make Flags
-CHOST=
-CFLAGS=
-CXXFLAGS=
-LDFLAGS=
-MAKEFLAGS=
+CHOST="x86_64-unknown-linux-gnu"
+CFLAGS="-march=x86-64 -mtune=generic -O2 -pipe"
+CXXFLAGS="$CFLAGS"
+LDFLAGS="-Wl,-O1 -Wl,--as-needed"
+MAKEFLAGS="-j1"
