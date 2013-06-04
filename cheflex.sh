@@ -186,7 +186,8 @@ CookPkg() {
 					else Compose; fi
 				done
 			done
-		else Compose; fi
+		elif [ -f $pth ]; then Compose
+		else echo "warn: no such file or directory"; fi
 	done
 }
 
