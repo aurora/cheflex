@@ -199,27 +199,16 @@ FeedPkg() {
 	fi
 
 	for pkg in $args; do
-		if [ -d $pkg ] && [ -f $pkg/$Recipe ]; then
-			echo "feed: installing $(basename -s "$PkgExt" $pkg)"
-			tar -C $Root -xpf $ChfDir/pkg/$(basename $pkg)$PkgExt
-		elif [ -d $pkg ] && [ "$(find $pkg/ -type f -iname "*$PkgExt")" ]; then
+		if [ -d $pkg ] && [ "$(find $pkg/ -type f -iname "*$PkgExt")" ]; then
 			find $pkg -type f -iname "*$PkgExt" | sort | while read _pkg; do
 				echo "feed: installing $(basename -s "$PkgExt" $_pkg)"
 				tar -C $Root -xpf $_pkg
 			done
 		elif [ -d $pkg ]; then Group=$(cd $pkg; pwd); ListGroup=$(ls $Group)
-			if [ "$(basename $pkg)" = "infra" ]; then
-				echo "feed: installing filesystem"
-				tar -C $Root -xpf $ChfDir/pkg/filesystem$PkgExt
-				for _pkg in $ListGroup; do
-					if [ "$_pkg" = "filesystem" ]; then continue; fi
-					echo "feed: installing $(basename -s "$PkgExt" $_pkg)"
-					tar -C $Root -xpf $ChfDir/pkg/$_pkg$PkgExt
-				done
-			else for _pkg in $ListGroup; do
+			for _pkg in $ListGroup; do
 				echo "feed: installing $(basename -s "$PkgExt" $_pkg)"
-				tar -C $Root -xpf $ChfDir/pkg/$_pkg$PkgExt; done
-			fi
+				tar -C $Root -xpf $ChfDir/pkg/$_pkg$PkgExt
+			done
 		else
 			echo "feed: installing $pkg"
 			if [ -f $ChfDir/grp/$pkg$PkgExt ]; then
