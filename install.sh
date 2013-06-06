@@ -17,3 +17,11 @@ done
 
 install -m755 cheflex.sh $root/usr/bin/cheflex
 install -m644 cheflex.rc $root/etc/cheflex
+
+mkdir -p ${pkgdir}/var/lib/cheflex/{grp,pkg,lst}
+chmod 775 ${pkgdir}/var/lib/cheflex/{grp,pkg}
+getent group cheflex || groupadd -g 234 cheflex
+chown root:cheflex ${pkgdir}/var/lib/cheflex/{grp,pkg}
+
+echo "info: add user to the cheflex group:"
+echo "      usermod -a -G cheflex username"
