@@ -194,24 +194,38 @@ CookPkg() {
 FeedPkg() {
 	if [ ! -d $Root ]; then mkdir -p $Root; fi
 
-	if [ "$src" = true ]; then
-		pkg=$(basename -s ".pkg" $file)
-		echo "feed: installing $pkg"
-		tar -C $Root -xpf $file
+	if [ "$src" = true ]; then pkg=$(basename -s "$PkgExt" $file)
+		echo "feed: installing $pkg"; tar -C $Root -xpf $file
 	fi
 
 	for pkg in $args; do
-		if [ ! -d $pkg ] || [ -f $pkg/$Recipe ]; then
+		if [ -d $pkg ] && [ -f $pkg/$Recipe ]; then
+			echo "feed: installing $(basename -s "$PkgExt" $pkg)"
+			tar -C $Root -xpf $ChfDir/pkg/$(basename $pkg)$PkgExt
+		elif [ -d $pkg ] && [ "$(find $pkg/ -type f -iname "*$PkgExt")" ]; then
+			find $pkg -type f -iname "*$PkgExt" | sort | while read _pkg; do
+				echo "feed: installing $(basename -s "$PkgExt" $_pkg)"
+				tar -C $Root -xpf $_pkg
+			done
+		elif [ -d $pkg ]; then Group=$(cd $pkg; pwd); ListGroup=$(ls $Group)
+			if [ "$(basename $pkg)" = "infra" ]; then
+				echo "feed: installing filesystem"
+				tar -C $Root -xpf $ChfDir/pkg/filesystem$PkgExt
+				for _pkg in $ListGroup; do
+					if [ "$_pkg" = "filesystem" ]; then continue; fi
+					echo "feed: installing $(basename -s "$PkgExt" $_pkg)"
+					tar -C $Root -xpf $ChfDir/pkg/$_pkg$PkgExt
+				done
+			else for _pkg in $ListGroup; do
+				echo "feed: installing $(basename -s "$PkgExt" $_pkg)"
+				tar -C $Root -xpf $ChfDir/pkg/$_pkg$PkgExt; done
+			fi
+		else
 			echo "feed: installing $pkg"
 			if [ -f $ChfDir/grp/$pkg$PkgExt ]; then
 				tar -C $Root -xpf $ChfDir/grp/$pkg$PkgExt
 			else tar -C $Root -xpf $ChfDir/pkg/$pkg$PkgExt
 			fi
-		elif [ -d $pkg ]; then Root=`pwd`/$Root; cd $pkg
-			find `pwd` -type f -iname "*.pkg" | sort | while read _pkg; do
-				echo "feed: installing $(basename -s ".pkg" $_pkg)"
-				tar -C $Root -xpf $_pkg
-			done
 		fi
 	done
 }
@@ -266,7 +280,7 @@ HelpMeUseIt() {
 	echo "  --skip-cmp           don't compile the source"
 	echo "  --keep-dbg           don't strip debug information"
 	echo "  --skip-ext           don't extract the source"
-	echo "  --keep-pkg           create group package"
+	echo "  --keep-pkg           create a group package"
 }
 
 if [ -z "$1" ] || [ -z "$2" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
