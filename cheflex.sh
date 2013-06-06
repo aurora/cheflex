@@ -11,6 +11,7 @@ Feed=false
 Free=false
 List=false
 Ownr=false
+SkipChk=false
 SkipCmp=false
 KeepDbg=false
 KeepPkg=false
@@ -101,22 +102,23 @@ Package() {
 		for i in "$lst"; do echo "$i" >> $FileLst; done
 	fi
 
-	if [ "$KeepPkg" = false ]; then
-		if [ -d "$LstDir" ]; then
-			echo "      checking conflict"
-			lsts=$(find $LstDir -type f -iname "*.lst" | sort)
-			for lst in $lsts; do _pkg=$(basename -s ".lst" $lst)
-				if [ $_pkg = $n ]; then break; fi
-				if [ $_pkg = "linux" ]; then continue; fi
-				while read ln_x; do
-					if [ -d "$ln_x" ]; then continue; fi
-					while read ln_y; do
-						if [ "$ln_x" = "$ln_y" ]; then
-							echo "      $n: conflicts $lst: $ln_y"
-						fi
-					done < $FileLst
-				done < $lst
-			done
+	if [ "$SkipChk" = false ]; then
+		if [ "$KeepPkg" = false ]; then
+			if [ -d "$LstDir" ]; then
+				echo "      checking conflict"
+				lsts=$(find $LstDir -type f -iname "*.lst" | sort)
+				for lst in $lsts; do _pkg=$(basename -s ".lst" $lst)
+					if [ $_pkg = $n ]; then break; fi
+					while read ln_x; do
+						if [ -d "$ln_x" ]; then continue; fi
+						while read ln_y; do
+							if [ "$ln_x" = "$ln_y" ]; then
+								echo "      $n: conflicts $lst: $ln_y"
+							fi
+						done < $FileLst
+					done < $lst
+				done
+			fi
 		fi
 	fi
 
@@ -151,8 +153,8 @@ Compose() {
 	if type Src >/dev/null 2>&1; then SrcFunc=true; export -f Src; fi
 	if type Pkg >/dev/null 2>&1; then PkgFunc=true; export -f Pkg; fi
 
-	export bin etc lib run shr usr var grp pkg src rcs
-	export SrcFunc PkgFunc KeepPkg KeepDbg SkipCmp State
+	export bin etc lib run shr usr var grp pkg src rcs \
+	SrcFunc PkgFunc KeepPkg KeepDbg SkipChk SkipCmp State
 
 	if [ $FirstTime = false ] && [ $KeepPkg = true ]; then
 		export FirstTime=true
@@ -171,8 +173,8 @@ Compose() {
 }
 
 CookPkg() {
-	export Root PwdDir GrpDir ChfDir LstDir BldDir PkgExt
-	export CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS CookGrp
+	export Root PwdDir GrpDir ChfDir LstDir BldDir PkgExt \
+	CHOST CFLAGS CXXFLAGS LDFLAGS MAKEFLAGS CookGrp
 
 	for pth in $args; do
 		if [ -d $pth ]; then _grp=$pth; export _grp; cd $pth
@@ -266,6 +268,7 @@ HelpMeUseIt() {
 	echo "  -o, ownr             check package owner"
 	echo "  --file=<file>        local file(s)"
 	echo "  --root=<directory>   change root directory"
+	echo "  --skip-chk           don't check conflicting file(s)"
 	echo "  --skip-cmp           don't compile the source"
 	echo "  --keep-dbg           don't strip debug information"
 	echo "  --skip-ext           don't extract the source"
@@ -279,6 +282,7 @@ fi
 for i in $@; do
 	if [ ${i:0:7} = "--root=" ]; then Root="${i:7:1000}"; LstPth="$Root/$LstDir"
 	elif [ ${i:0:7} = "--file=" ]; then file="${i:7:1000}"; src=true
+	elif [ "$i" = "--skip-chk" ]; then SkipChk=true
 	elif [ "$i" = "--skip-cmp" ]; then SkipCmp=true
 	elif [ "$i" = "--skip-ext" ]; then SkipExt=true
 	elif [ "$i" = "--keep-dbg" ]; then KeepDbg=true
