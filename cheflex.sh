@@ -206,10 +206,12 @@ FeedPkg() {
 				echo "feed: installing $(basename -s "$PkgExt" $_pkg)"
 				tar -C $Root -xpf $_pkg
 			done
-		elif [ -d $pkg ]; then Group=$(cd $pkg; pwd); ListGroup=$(ls $Group)
-			for _pkg in $ListGroup; do
-				echo "feed: installing $(basename -s "$PkgExt" $_pkg)"
-				tar -C $Root -xpf $ChfDir/pkg/$_pkg$PkgExt
+		elif [ -d $pkg ]; then
+			find $pkg -type d | sort | while read _pkg; do
+				if [ -f $ChfDir/pkg/$(basename $_pkg)$PkgExt ]; then
+					echo "feed: installing $(basename $_pkg)"
+					tar -C $Root -xpf $ChfDir/pkg/$(basename $_pkg)$PkgExt
+				fi
 			done
 		else
 			echo "feed: installing $pkg"
