@@ -3,7 +3,7 @@ set -e
 
 # Copyright 2013 Ali H. Caliskan <ahc@selflex.org>
 # Cheflex is licenced under the General Public License
-# version 3, GPLv3. Read the included LICENSE file.
+# version 3, GPLv3.
 
 . /etc/cheflex
 Cook=false
@@ -21,13 +21,13 @@ FirstTime=false
 LastTime=false
 LstPth=""
 PwdDir=`pwd`
-State="/tmp/fakeroot"
+State="/tmp/fakestate"
 args=""
 
 Source() {
-	if [ $KeepPkg = false ]; then _dirs=($pkg $src $tmp)
-	else _dirs=($grp $src $tmp); fi
-	for i in "${_dirs[@]}"; do
+	if [ $KeepPkg = false ]; then dirs=($pkg $src $tmp)
+	else dirs=($grp $src $tmp); fi
+	for i in "${dirs[@]}"; do
 		if [ ! -d $i ]; then mkdir -p $i; fi
 	done
 
@@ -260,8 +260,8 @@ OwnrPkg() {
 	done
 }
 
-HelpMeUseIt() {
-	echo "usage: cheflex [options] package(s)"
+Help() {
+	echo "usage: `basename $0` [options] package(s)"
 	echo "options:"
 	echo "  -b, cook             build package(s)"
 	echo "  -i, feed             install package(s)"
@@ -278,7 +278,7 @@ HelpMeUseIt() {
 }
 
 if [ -z "$1" ] || [ -z "$2" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-	HelpMeUseIt; exit 0
+	Help; exit 0
 fi
 
 for i in $@; do
