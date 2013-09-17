@@ -268,7 +268,7 @@ ShowUsg() {
 	echo "  -r, free             remove package(s)"
 	echo "  -l, list             list package content"
 	echo "  -o, ownr             check package owner"
-	echo "  --file=<file>        local file(s)"
+	echo "  --file=<file>        local package(s)"
 	echo "  --root=<directory>   change root directory"
 	echo "  --skip-chk           don't check conflicting file(s)"
 	echo "  --skip-cmp           don't compile the source"
