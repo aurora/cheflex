@@ -21,7 +21,7 @@ FirstTime=false
 LastTime=false
 LstPth=""
 PwdDir=`pwd`
-State="/tmp/fakestate"
+State="$TmpDir/state"
 args=""
 
 Source() {
@@ -260,7 +260,7 @@ OwnrPkg() {
 	done
 }
 
-Help() {
+ShowUsg() {
 	echo "usage: `basename $0` [options] package(s)"
 	echo "options:"
 	echo "  -b, cook             build package(s)"
@@ -278,7 +278,7 @@ Help() {
 }
 
 if [ -z "$1" ] || [ -z "$2" ] || [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-	Help; exit 0
+	ShowUsg; exit 0
 fi
 
 for i in $@; do

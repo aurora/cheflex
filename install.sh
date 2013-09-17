@@ -2,13 +2,13 @@
 
 root=
 
-HelpMeUseIt() {
+ShowUsage() {
 	echo "options:"
 	echo "       --root= (change root directory)"
 }
 
 if [ "$1" = "--help" ] || [ "$1" = "-h" ]; then
-	HelpMeUseIt; exit 0
+	ShowUsage; exit 0
 fi
 
 for i in $@; do
