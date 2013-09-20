@@ -50,7 +50,7 @@ Source() {
 	if [ $SrcFunc = true ]; then
 			cd $src/$p
 			echo "      compiling $n-$v"; Src
-			echo "done"; cd $BldDir
+			if [ $? -eq 0 ]; then echo "done"; cd $BldDir; else exit 1; fi
 	fi
 }
 
@@ -59,6 +59,7 @@ Package() {
 
 	if [ $PkgFunc = true ]; then
 		cd $src/$p; echo "      installing files"; Pkg
+		if [ ! $? -eq 0 ]; then exit 1; fi
 	fi
 
 	if [ $CookGrp = true ]; then

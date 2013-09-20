@@ -17,6 +17,7 @@ LstDir="$ChfDir/lst"
 BldDir="$HOME/.cook"
 GrpDir="$BldDir/grp"
 PkgDir="$BldDir/pkg"
+PthDir="$BldDir/pth"
 SrcDir="$BldDir/src"
 TmpDir="$BldDir/tmp"
 

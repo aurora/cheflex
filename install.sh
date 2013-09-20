@@ -3,6 +3,7 @@
 root=
 
 ShowUsage() {
+	echo "usage: $0 [options]"
 	echo "options:"
 	echo "       --root= (change root directory)"
 }
@@ -17,8 +18,9 @@ for i in $@; do
 	fi
 done
 
-install -m755 cheflex.sh $root/usr/bin/cheflex
 install -m644 cheflex.rc $root/etc/cheflex
+install -m755 bldpath.sh $root/usr/bin/bldpath
+install -m755 cheflex.sh $root/usr/bin/cheflex
 
 mkdir -p $root/var/lib/cheflex/{grp,pkg,lst}
 chmod 775 $root/var/lib/cheflex/{grp,pkg}
