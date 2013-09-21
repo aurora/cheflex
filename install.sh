@@ -19,7 +19,6 @@ for i in $@; do
 done
 
 install -m644 cheflex.rc $root/etc/cheflex
-install -m755 bldpath.sh $root/usr/bin/bldpath
 install -m755 cheflex.sh $root/usr/bin/cheflex
 
 mkdir -p $root/var/lib/cheflex/{grp,pkg,lst}

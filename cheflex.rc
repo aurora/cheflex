@@ -17,9 +17,9 @@ LstDir="$ChfDir/lst"
 BldDir="$HOME/.cook"
 GrpDir="$BldDir/grp"
 PkgDir="$BldDir/pkg"
-PthDir="$BldDir/pth"
 SrcDir="$BldDir/src"
 TmpDir="$BldDir/tmp"
+TstDir="$BldDir/tst"
 
 # Compiler, Linker and Make Flags
 CHOST="x86_64-unknown-linux-gnu"

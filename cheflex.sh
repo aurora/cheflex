@@ -27,8 +27,8 @@ args=""
 Source() {
 	if [ $KeepPkg = false ]; then dirs=($pkg $src $tmp)
 	else dirs=($grp $src $tmp); fi
-	for i in "${dirs[@]}"; do
-		if [ ! -d $i ]; then mkdir -p $i; fi
+	for di in "${dirs[@]}"; do
+		if [ ! -d $di ]; then mkdir -p $di; fi
 	done
 
 	if [ $SkipExt = false ] && [ -n "$u" ]; then
@@ -100,7 +100,7 @@ Package() {
 		if [ ! -d $LstPth ]; then mkdir -p $LstPth; fi
 		if [ -f $FileLst ]; then rm -rf $FileLst; touch $FileLst; else touch $FileLst; fi
 		lst=$(find -L ./ | sed 's/.\//\//' | sort | cat)
-		for i in "$lst"; do echo "$i" >> $FileLst; done
+		for li in "$lst"; do echo "$li" >> $FileLst; done
 	fi
 
 	if [ "$SkipChk" = false ]; then
@@ -261,14 +261,39 @@ OwnrPkg() {
 	done
 }
 
+TestPkg() {
+	_args=$args
+
+	for path in $_args; do
+		_pth=$TstDir/$(basename $path)
+		if [ ! -d "$_pth" ]; then mkdir -p $_pth; fi
+
+		for i in $(ls $path); do
+			if [ ! -f "$_pth/$i" ]; then touch $_pth/$i; fi
+		done
+
+		for i in $(ls $path); do
+			if [ ! -f $_pth/$i.done ]; then args=$path/$i; CookPkg; fi
+			if [ $? -eq 0 ]; then touch $_pth/$i.done; cd $PwdDir; fi
+		done
+
+		for i in $(ls $path); do
+			if [ ! -f $_pth/$i.done ]; then exit 1; fi
+		done
+
+		if [ $? -eq 0 ]; then rm -r $_pth; fi
+	done
+}
+
 ShowUsg() {
 	echo "usage: `basename $0` [options] package(s)"
 	echo "options:"
-	echo "  -b, cook             build package(s)"
-	echo "  -i, feed             install package(s)"
-	echo "  -r, free             remove package(s)"
-	echo "  -l, list             list package content"
-	echo "  -o, ownr             check package owner"
+	echo "  -b, cook             build the package(s)"
+	echo "  -i, feed             install the package(s)"
+	echo "  -r, free             remove the package(s)"
+	echo "  -l, list             list the package content"
+	echo "  -o, ownr             check the package owner"
+	echo "  -t, test             test the group packages"
 	echo "  --file=<file>        local package(s)"
 	echo "  --root=<directory>   change root directory"
 	echo "  --skip-chk           don't check conflicting file(s)"
@@ -295,6 +320,7 @@ for i in $@; do
 	elif [ "$i" = "-r" ] || [ "$i" = "free" ]; then Free=true
 	elif [ "$i" = "-l" ] || [ "$i" = "list" ]; then List=true
 	elif [ "$i" = "-o" ] || [ "$i" = "ownr" ]; then Ownr=true
+	elif [ "$i" = "-t" ] || [ "$i" = "test" ]; then Test=true
 	else args="$args $i"; fi
 done
 
@@ -303,3 +329,4 @@ if [ $Feed = true ]; then FeedPkg; fi
 if [ $Free = true ]; then FreePkg; fi
 if [ $List = true ]; then ListPkg; fi
 if [ $Ownr = true ]; then OwnrPkg; fi
+if [ $Test = true ]; then TestPkg; fi
