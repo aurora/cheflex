@@ -324,9 +324,9 @@ for i in $@; do
 	else args="$args $i"; fi
 done
 
-if [ $Cook = true ]; then CookPkg; fi
-if [ $Feed = true ]; then FeedPkg; fi
-if [ $Free = true ]; then FreePkg; fi
-if [ $List = true ]; then ListPkg; fi
-if [ $Ownr = true ]; then OwnrPkg; fi
-if [ $Test = true ]; then TestPkg; fi
+if [ "$Cook" = true ]; then CookPkg; fi
+if [ "$Feed" = true ]; then FeedPkg; fi
+if [ "$Free" = true ]; then FreePkg; fi
+if [ "$List" = true ]; then ListPkg; fi
+if [ "$Ownr" = true ]; then OwnrPkg; fi
+if [ "$Test" = true ]; then TestPkg; fi
