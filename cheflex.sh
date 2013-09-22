@@ -170,7 +170,7 @@ Compose() {
 		else Source; export -f Package; fakeroot Package; fi
 	fi		
 
-	unset -f {Src,Pkg}; unset {SrcFunc,PkgFunc}; p=""
+	unset -f {Src,Pkg}; unset {SrcFunc,PkgFunc}; p=""; cd $PwdDir
 }
 
 CookPkg() {
