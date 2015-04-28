@@ -25,7 +25,6 @@ The standard recipe for building a package looks like this:
 
     n=grep
     v=2.14
-    s=infra
     u=ftp://ftp.gnu.org/gnu/$n/$n-$v.tar.xz
 
     Src() {
